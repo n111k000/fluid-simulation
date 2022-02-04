@@ -1,12 +1,16 @@
-#include <cstdlib>
 #include <math.h>
 #include <Windows.h>
 #include <stdio.h>
 #include <iostream>
+#include <SDL.h>
+#include <SDL_image.h>
+#include <vector>
+#include <fstream>
+
 
 #define IX(i,j) ((i)+(N)*(j))
 
-using namespace std;
+
 
 struct FluidSqare {
     int size;
@@ -36,7 +40,7 @@ FluidSqare* FluidSquareCreate(int size, int diffusion, int viscosity, float dt)
     square->dt = dt;
     square->diff = diffusion;
     square->visc = viscosity;
-    
+
     square->s = (float*)calloc(N * N, sizeof(float));
     if (square->s == NULL) exit(1);
     square->density = (float*)calloc(N * N, sizeof(float));
@@ -73,18 +77,15 @@ void FluidSquareAddDensity(FluidSqare* square, int x, int y, float amount)
 {
     int N = square->size;
     square->density[IX(x, y)] += amount;
-    cout << square->density[IX(x, y)];
 }
 
 void FluidSquareAddVelocity(FluidSqare* square, int x, int y, float amountX, float amountY)
 {
     int N = square->size;
     int index = IX(x, y);
-  
+
     square->Vx[index] += amountX;
-    cout << square->Vx[index];
     square->Vy[index] += amountY;
-    cout << square->Vy[index];
 }
 
 static void set_bnd(int b, float* x, int N)
@@ -106,6 +107,7 @@ static void set_bnd(int b, float* x, int N)
     x[IX(N - 1, 0)] = 0.5f * (x[IX(N - 2, 0)] + x[IX(N - 1, 1)]);
 
     x[IX(N - 1, N - 1)] = 0.5f * (x[IX(N - 2, N - 1)] + x[IX(N - 1, N - 2)]);
+
 
 }
 
@@ -231,42 +233,123 @@ void FluidSquareStep(FluidSqare* square)
     float* s = square->s;
     float* density = square->density;
 
-    diffuse(1, Vx0, Vx, visc, dt, 0.1, N);
-    diffuse(2, Vy0, Vy, visc, dt, 0.1, N);
+    diffuse(1, Vx0, Vx, visc, dt, 4, N);
+    diffuse(2, Vy0, Vy, visc, dt, 4, N);
 
-    project(Vx0, Vy0, Vx, Vy, 0.1, N);
+    project(Vx0, Vy0, Vx, Vy, 4, N);
 
     advect(1, Vx, Vx0, Vx0, Vy0, dt, N);
     advect(2, Vy, Vy0, Vx0, Vy0, dt, N);
 
-    project(Vx, Vy, Vx0, Vy0, 0.1, N);
+    project(Vx, Vy, Vx0, Vy0, 4, N);
 
-    diffuse(0, s, density, diff, dt, 0.1, N);
+    diffuse(0, s, density, diff, dt, 4, N);
     advect(0, density, s, Vx, Vy, dt, N);
 }
 
-int main(FluidSqare* square) {
+//pretvaranje arraya u sliku
 
-    POINTER_32 square = FluidSquareCreate(100, 0, 0, 0);
 
-    while (1 < 2) {
-        if (GetKeyState('A') & 0x8000/*Check if high-order bit is set (1 << 15)*/)
+
+
+const int WIDTH = 1000, HEIGHT = 1000;
+
+//sdl rect/(idk)
+SDL_Rect newSDL_Rect(int xs, int ys, int widths, int heights) {
+    SDL_Rect rectangular;
+    rectangular.x = xs;
+    rectangular.y = ys;
+    rectangular.w = widths;
+    rectangular.h = heights;
+    return rectangular;
+}
+
+int main(int argc, char* argv[]/*, FluidSqare* square*/)
+{
+    //kreiranje ovoga za simulaciiju
+    FluidSqare* square;
+    POINTER_32 square = FluidSquareCreate(100, 0, 0, .1);
+    int N = square->size;
+
+    //sdl defining??
+
+    SDL_Window* window = NULL;
+    SDL_Surface* surface = NULL;
+    SDL_Renderer* renderer = NULL;
+    SDL_Event ev;
+
+    
+    SDL_Rect rects[100][100];
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) //Init the video driver
+    {
+        printf("SDL_Error: %s\n", SDL_GetError());
+    }
+ 
+    window = SDL_CreateWindow("SDL 2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN); //Creates the window
+    if (window == NULL)
+    {
+            printf("SDL_Error: %s\n", SDL_GetError());
+    }
+
+    renderer = SDL_CreateRenderer(window, 0, SDL_RENDERER_ACCELERATED); //renderer used to color rects
+    if (renderer == NULL)
+    {
+        printf("SDL_Error %s\n", SDL_GetError());
+    }
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+       
+    for (int i = 0; i < 100; i++)
+    {
+                
+        for (int j = 0; j < 100; j++)        
         {
-            cout << "End of simulating";
-            FluidSquareFree(square);
+            rects[i][j] = newSDL_Rect(i * 10, j * 10, 10, 10);
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+            SDL_RenderFillRect(renderer, &rects[i][j]);
+                
+        }
+
+        SDL_UpdateWindowSurface(window);    
+        SDL_RenderPresent(renderer);
+    
+    }
+
+    
+    while (true)
+    {
+        FluidSquareAddDensity(square, 5, 95, 2);
+
+        FluidSquareAddVelocity(square, 5, 95, 5, -5);
+   
+       
+        FluidSquareStep(square);
+        
+        SDL_PollEvent(&ev);
+
+        if (ev.type == SDL_QUIT)
+        {
             break;
         }
-        else if (GetKeyState(VK_SHIFT) & 0x8000/*Check if high-order bit is set (1 << 15)*/)
-        {
-            cout << "adding density and velocity";
-            int x, y;
-            cin >> x >> y;
-            FluidSquareAddDensity(square, x, y, 1);
-            FluidSquareAddVelocity(square, x, y, 1, 1);
-        }
 
-        FluidSquareStep(square);
+        for (int i = 0; i < 100; i++)
+            for (int j = 0; j < 100; j++)
+            {
+                int dens = square->density[IX(i, j)] * 255;
+                rects[i][j] = newSDL_Rect(i * 10, j * 10, 10, 10);
+                SDL_SetRenderDrawColor(renderer, dens, dens, 0, 255);
+                SDL_RenderFillRect(renderer, &rects[i][j]);
+            }
+
+        SDL_UpdateWindowSurface(window);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(50);
+
     }
-    
-    return(0);
+
+    FluidSquareFree(square);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
+    return EXIT_SUCCESS;
 }

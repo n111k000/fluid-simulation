@@ -18,13 +18,5 @@
     <ClCompile Include="fluid simulation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Image.bmp">
-      <Filter>Source Files</Filter>
-    </Image>
   </ItemGroup>
 </Project>
