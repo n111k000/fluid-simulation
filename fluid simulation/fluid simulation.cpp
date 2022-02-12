@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <iostream>
 #include <SDL.h>
-#include <SDL_image.h>
 #include <vector>
 #include <fstream>
 
@@ -210,8 +209,8 @@ static void advect(int b, float* d, float* d0, float* velocX, float* velocY, flo
             int j0i = j0;
             int j1i = j1;
 
-            d[IX(i, j)] =
-
+            d[IX(i, j)] = 
+                
                 s0 * (t0 * d0[IX(i0i, j0i)] + t1 * d0[IX(i0i, j1i)])
                 + s1 * (t0 * d0[IX(i1i, j0i)] + t1 * d0[IX(i1i, j1i)]);
 
@@ -268,7 +267,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
 {
     //kreiranje ovoga za simulaciiju
     FluidSqare* square;
-    POINTER_32 square = FluidSquareCreate(100, 0, 0, .1);
+    square = FluidSquareCreate(100, 0, 0, .1);
     int N = square->size;
 
     //sdl defining??
@@ -285,7 +284,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
         printf("SDL_Error: %s\n", SDL_GetError());
     }
  
-    window = SDL_CreateWindow("SDL 2", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN); //Creates the window
+    window = SDL_CreateWindow("fluid simulation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN); //Creates the window
     if (window == NULL)
     {
             printf("SDL_Error: %s\n", SDL_GetError());
@@ -318,9 +317,9 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
     
     while (true)
     {
-        FluidSquareAddDensity(square, 5, 95, 2);
+        FluidSquareAddDensity(square, 5, 45, 2);
 
-        FluidSquareAddVelocity(square, 5, 95, 5, -5);
+        FluidSquareAddVelocity(square, 5, 45, 5, -5);
    
        
         FluidSquareStep(square);
@@ -332,7 +331,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
             break;
         }
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 100; i++) {
             for (int j = 0; j < 100; j++)
             {
                 int dens = square->density[IX(i, j)] * 255;
@@ -340,6 +339,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
                 SDL_SetRenderDrawColor(renderer, dens, dens, 0, 255);
                 SDL_RenderFillRect(renderer, &rects[i][j]);
             }
+        }
 
         SDL_UpdateWindowSurface(window);
         SDL_RenderPresent(renderer);
@@ -349,6 +349,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
 
     FluidSquareFree(square);
     SDL_DestroyWindow(window);
+    SDL_DestroyRenderer(renderer);
     SDL_Quit();
 
     return EXIT_SUCCESS;
