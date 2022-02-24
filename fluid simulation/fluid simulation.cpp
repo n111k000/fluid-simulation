@@ -1,10 +1,6 @@
-#include <math.h>
 #include <Windows.h>
-#include <stdio.h>
 #include <iostream>
 #include <SDL.h>
-#include <vector>
-#include <fstream>
 
 
 #define IX(i,j) ((i)+(N)*(j))
@@ -29,7 +25,7 @@ struct FluidSqare {
 };
 typedef struct FluidSqare FluidSqare;
 
-FluidSqare* FluidSquareCreate(int size, int diffusion, int viscosity, float dt)
+FluidSqare* FluidSquareCreate(int size, float diffusion, float viscosity, float dt)
 {
 
     FluidSqare* square = (FluidSqare*)malloc(sizeof(*square));
@@ -250,7 +246,6 @@ void FluidSquareStep(FluidSqare* square)
 
 
 
-
 const int WIDTH = 1000, HEIGHT = 1000;
 
 //sdl rect/(idk)
@@ -265,9 +260,11 @@ SDL_Rect newSDL_Rect(int xs, int ys, int widths, int heights) {
 
 int main(int argc, char* argv[]/*, FluidSqare* square*/)
 {
+
+    
     //kreiranje ovoga za simulaciiju
     FluidSqare* square;
-    square = FluidSquareCreate(100, 0, 0, .1);
+    square = FluidSquareCreate(100, .000000001, 0, .1);
     int N = square->size;
 
     //sdl defining??
@@ -276,6 +273,10 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
     SDL_Surface* surface = NULL;
     SDL_Renderer* renderer = NULL;
     SDL_Event ev;
+
+    Uint64 mouseButtons;
+    int mouseX, mouseY;
+    int mouseXprev = 0, mouseYprev = 0;
 
     
     SDL_Rect rects[100][100];
@@ -317,19 +318,26 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
     
     while (true)
     {
-        FluidSquareAddDensity(square, 5, 45, 2);
-
-        FluidSquareAddVelocity(square, 5, 45, 5, -5);
-   
-       
-        FluidSquareStep(square);
         
+   
         SDL_PollEvent(&ev);
-
+       
         if (ev.type == SDL_QUIT)
         {
             break;
         }
+
+        mouseButtons = SDL_GetMouseState(&mouseX, &mouseY);
+
+        
+        FluidSquareAddDensity(square, int(mouseX/10), int(mouseY/10), 2); 
+
+        FluidSquareAddVelocity(square, int(mouseX/10), int(mouseY/10), .02*(mouseX - mouseXprev), .02*(mouseY - mouseYprev));
+
+        mouseXprev = mouseX;
+        mouseYprev = mouseY;
+
+        FluidSquareStep(square);
 
         for (int i = 0; i < 100; i++) {
             for (int j = 0; j < 100; j++)
@@ -343,7 +351,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
 
         SDL_UpdateWindowSurface(window);
         SDL_RenderPresent(renderer);
-        SDL_Delay(50);
+        SDL_Delay(20);
 
     }
 
