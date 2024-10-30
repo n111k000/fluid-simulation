@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <iostream>
 #include <SDL.h>
+#include <thread>
 
 
 #define IX(i,j) ((i)+(N)*(j))
@@ -66,6 +67,7 @@ void FluidSquareFree(FluidSqare* square)
     free(square->Vy0);
 
     free(square);
+
 }
 
 void FluidSquareAddDensity(FluidSqare* square, int x, int y, float amount)
@@ -261,12 +263,13 @@ SDL_Rect newSDL_Rect(int xs, int ys, int widths, int heights) {
 int main(int argc, char* argv[]/*, FluidSqare* square*/)
 {
 
-    
+
     //kreiranje ovoga za simulaciiju
     FluidSqare* square;
-    square = FluidSquareCreate(100, .000000001, 0, .1);
+    square = FluidSquareCreate(100, 0.00000000000001, 0.0000051, 0.1);
     int N = square->size;
 
+    
     //sdl defining??
 
     SDL_Window* window = NULL;
@@ -327,22 +330,23 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
             break;
         }
 
-        mouseButtons = SDL_GetMouseState(&mouseX, &mouseY);
+
 
         
-        FluidSquareAddDensity(square, int(mouseX/10), int(mouseY/10), 2); 
-
-        FluidSquareAddVelocity(square, int(mouseX/10), int(mouseY/10), .02*(mouseX - mouseXprev), .02*(mouseY - mouseYprev));
-
-        mouseXprev = mouseX;
-        mouseYprev = mouseY;
-
+        FluidSquareAddDensity(square, 30, 70, 10);
+        FluidSquareAddDensity(square, 70, 60, 10);
+        FluidSquareAddVelocity(square, 30, 70, 1, -1);
+        FluidSquareAddVelocity(square, 70, 60, -1, -1);
+        
+        
+        
         FluidSquareStep(square);
-
+        
         for (int i = 0; i < 100; i++) {
             for (int j = 0; j < 100; j++)
             {
-                int dens = square->density[IX(i, j)] * 255;
+                int dens = square->density[IX(i, j)] * 255/2;
+                dens > 255 ? dens = 255 : dens;
                 rects[i][j] = newSDL_Rect(i * 10, j * 10, 10, 10);
                 SDL_SetRenderDrawColor(renderer, dens, dens, 0, 255);
                 SDL_RenderFillRect(renderer, &rects[i][j]);
@@ -359,6 +363,6 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
     SDL_Quit();
-
+    
     return EXIT_SUCCESS;
 }
