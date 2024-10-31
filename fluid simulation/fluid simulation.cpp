@@ -244,8 +244,31 @@ void FluidSquareStep(FluidSqare* square)
     advect(0, density, s, Vx, Vy, dt, N);
 }
 
-//pretvaranje arraya u sliku
+//pauza
 
+void Pause() {
+    SDL_Event ev;
+    
+    while (true) {
+        SDL_PollEvent(&ev);
+        if (ev.type == SDL_KEYDOWN && ev.key.keysym.scancode == SDL_SCANCODE_P) {
+            break;
+        }
+    }
+}
+
+//prolazak kroz sve to?ke nastanka plina i brzina
+void GaVAdding(FluidSqare* square, int* SPx, int* SPy, int* SPam, int* VELx, int* VELy, float* VELxam, float* VELyam, int noSP, int noVEL) {
+
+    for (int i = 0; i < noSP; i++) {
+        FluidSquareAddDensity(square, SPx[i], SPy[i], SPam[i]);
+    }
+
+    for (int i = 0; i < noVEL; i++) {
+        FluidSquareAddVelocity(square, VELx[i], VELy[i], VELxam[i], VELyam[i]);
+    }
+
+}
 
 
 const int WIDTH = 1000, HEIGHT = 1000;
@@ -269,7 +292,46 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
     square = FluidSquareCreate(100, 0.00000000000001, 0.0000051, 0.1);
     int N = square->size;
 
+    //unosenje podataka
+    std::cout << "pri unošenju brojevi koordinata moraju biti od 0 do 100";
+    int noSP;
+    std::cout << "Broj mjesta nastanka plina: ";
+    std::cin >> noSP;
+
+    int* SPx = new int[noSP] {};
+    int* SPy = new int[noSP] {};
+    int* SPam = new int[noSP] {};
+
+    for (int i = 0; i < noSP; i++) {
+        std::cout << "Unesi vrijednost x " << i+1 << ": ";
+        std::cin >> SPx[i];
+        std::cout << "Unesi vrijednost y " << i + 1 << ": ";
+        std::cin >> SPy[i];
+        std::cout << "Unesi kolicinu " << i + 1 << ": ";
+        std::cin >> SPam[i];
+    }
+
+    int noVEL;
+    std::cout << "Broj mjesta ubrzanja: ";
+    std::cin >> noVEL;
+
+    int* VELx = new int[noVEL] {};
+    int* VELy = new int[noVEL] {};
+    float* VELxam = new float[noVEL] {};
+    float* VELyam = new float[noVEL] {};
+
+    for (int i = 0; i < noVEL; i++) {
+        std::cout << "Unesi vrijednost x " << i + 1 << ": ";
+        std::cin >> VELx[i];
+        std::cout << "Unesi vrijednost y " << i + 1 << ": ";
+        std::cin >> VELy[i];
+        std::cout << "Unesi kolicinu po x za " << i + 1 << ": ";
+        std::cin >> VELxam[i];
+        std::cout << "Unesi kolicinu po y za " << i + 1 << ": ";
+        std::cin >> VELyam[i];
+    }
     
+
     //sdl defining??
 
     SDL_Window* window = NULL;
@@ -280,7 +342,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
     Uint64 mouseButtons;
     int mouseX, mouseY;
     int mouseXprev = 0, mouseYprev = 0;
-
+    
     
     SDL_Rect rects[100][100];
     if (SDL_Init(SDL_INIT_VIDEO) < 0) //Init the video driver
@@ -318,6 +380,8 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
     
     }
 
+
+    bool QT = false;
     
     while (true)
     {
@@ -325,23 +389,37 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
    
         SDL_PollEvent(&ev);
        
-        if (ev.type == SDL_QUIT)
-        {
+        switch (ev.type){
+        
+        case SDL_QUIT:
+
+            QT = true;
+
+        case SDL_KEYDOWN:
+
+            switch (ev.key.keysym.scancode){
+
+            case SDL_SCANCODE_P:
+
+                Pause();
+
+            }
+
+        }
+
+        if (QT){
             break;
         }
 
+        //napravi da se dodaje upisan broj tocaka za dodavanje plinova
 
+        GaVAdding(square, SPx, SPy, SPam, VELx, VELy, VELxam, VELyam, noSP, noVEL);
 
-        
-        FluidSquareAddDensity(square, 30, 70, 10);
-        FluidSquareAddDensity(square, 70, 60, 10);
-        FluidSquareAddVelocity(square, 30, 70, 1, -1);
-        FluidSquareAddVelocity(square, 70, 60, -1, -1);
-        
-        
+               
         
         FluidSquareStep(square);
-        
+
+        //pretvara iz podataka u sliku
         for (int i = 0; i < 100; i++) {
             for (int j = 0; j < 100; j++)
             {
@@ -358,7 +436,13 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
         SDL_Delay(20);
 
     }
-
+    delete[] SPx;
+    delete[] SPy;
+    delete[] SPam;
+    delete[] VELx;
+    delete[] VELy;
+    delete[] VELxam;
+    delete[] VELyam;
     FluidSquareFree(square);
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
