@@ -91,22 +91,36 @@ struct Bounds{
     int* kGRx;
     int* kGRy;
     int brGR;
+    bool* GR;
 };
 typedef struct Bounds Bounds;
 
-Bounds* BoundsCreate(int brGR) {
+Bounds* BoundsCreate(int brGR, int N) {
     Bounds* bounds = (Bounds*)malloc(sizeof(*bounds));
 
     bounds->brGR = brGR;
     bounds->kGRx = new int[brGR] {};
     bounds->kGRy = new int[brGR] {};
+    bounds->GR = (bool*)calloc(N * N, sizeof(bool));
 
     return bounds;
 }
 
+void BoundsDefine(Bounds* bounds, int N) {
+    int brGR = bounds->brGR;
+    int* kGRx = bounds->kGRx;
+    int* kGRy = bounds->kGRy;
+
+    for (int i = 0; i < brGR; i++) {
+        bounds->GR[IX(kGRx[i], kGRy[i])] = 1;
+    }
+}
+
+
 void BoundsFree(Bounds* bounds) {
     free(bounds->kGRx);
     free(bounds->kGRy);
+    free(bounds->GR);
 
     free(bounds);
 }
@@ -117,6 +131,7 @@ static void set_bnd(int b, float* x, int N, Bounds* bounds)
     int* kGRx = bounds->kGRx;
     int* kGRy = bounds->kGRy;
     int brGR = bounds->brGR;
+    bool* GR = bounds->GR;
 
     //za stranice koje omeduju
     for (int i = 1; i < N - 1; i++) {
@@ -140,18 +155,51 @@ static void set_bnd(int b, float* x, int N, Bounds* bounds)
     //za vlastite granice
 
     for (int k = 0; k < brGR; k++) {
-        if (kGRx[k] != 0) {
-            x[IX(kGRx[k] - 1, kGRy[k])] = b == 2 ? -x[IX(kGRx[k] - 1, kGRy[k])] : x[IX(kGRx[k] - 1, kGRy[k])];
+        //ravno
+        bool u = kGRy[k] != 0;
+        bool d = kGRy[k] != N - 1;
+        bool r = kGRx[k] != N - 1;
+        bool l = kGRx[k] != 0;
+        
+
+        if (l) {
+            x[IX(kGRx[k] - 1, kGRy[k])] = b == 1 ? -x[IX(kGRx[k] - 1, kGRy[k])] : x[IX(kGRx[k] - 1, kGRy[k])];
         }
-        if (kGRx[k] != N-1) {
-            x[IX(kGRx[k] + 1, kGRy[k])] = b == 2 ? -x[IX(kGRx[k] + 1, kGRy[k])] : x[IX(kGRx[k] + 1, kGRy[k])];
+        if (r) {
+            x[IX(kGRx[k] + 1, kGRy[k])] = b == 1 ? -x[IX(kGRx[k] + 1, kGRy[k])] : x[IX(kGRx[k] + 1, kGRy[k])];
         }
-        if (kGRy[k] != 0) {
+        if (u) {
             x[IX(kGRx[k], kGRy[k] - 1)] = b == 2 ? -x[IX(kGRx[k], kGRy[k] - 1)] : x[IX(kGRx[k], kGRy[k] - 1)];
         }
-        if (kGRy[k] != N-1) {
+        if (d) {
             x[IX(kGRx[k], kGRy[k] + 1)] = b == 2 ? -x[IX(kGRx[k], kGRy[k] + 1)] : x[IX(kGRx[k], kGRy[k] + 1)];
+        }
+        //kutevi
+        
 
+        
+
+        if(l && r && u && d){
+
+            //lijevo gore desno dolje
+            int val1 = GR[IX(kGRx[k] - 1, kGRy[k])];
+            int val2 = GR[IX(kGRx[k], kGRy[k] - 1)];
+            int val3 = GR[IX(kGRx[k] + 1, kGRy[k])];
+            int val4 = GR[IX(kGRx[k], kGRy[k] + 1)];
+
+            if (val1 == 1 && val2 == 1 && val3 == 0 && val4 == 0) {
+                x[IX(kGRx[k] + 1, kGRy[k] + 1)] = b == 2 ? abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : abs(x[IX(kGRx[k] - 1, kGRy[k])]);
+            }
+            else if (val1 == 0 && val2 == 1 && val3 == 1 && val4 == 0) {
+                x[IX(kGRx[k] - 1, kGRy[k] + 1)] = b == 2 ? abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : -abs(x[IX(kGRx[k] - 1, kGRy[k])]);
+            }
+            else if (val1 == 1 && val2 == 0 && val3 == 0 && val4 == 1) {
+                x[IX(kGRx[k] + 1, kGRy[k] - 1)] = b == 2 ? -abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : abs(x[IX(kGRx[k] - 1, kGRy[k])]);
+            }
+            else if (val1 == 0 && val2 == 0 && val3 == 1 && val4 == 1) {
+                x[IX(kGRx[k] - 1, kGRy[k] - 1)] = b == 2 ? -abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : -abs(x[IX(kGRx[k] - 1, kGRy[k])]);
+            }
+            
         }
     }
 }
@@ -387,14 +435,34 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
 
     //vlastite granice
     Bounds* bounds;
-    bounds = BoundsCreate(2);
+    bounds = BoundsCreate(20, N);
 
 
-    bounds->kGRx[0] = 50;
-    bounds->kGRy[0] = 50;
-    bounds->kGRx[1] = 49;
-    bounds->kGRy[1] = 50;
+    bounds->kGRx[0] = 48; bounds->kGRy[0] = 48;
+    bounds->kGRx[1] = 48; bounds->kGRy[1] = 49;
+    bounds->kGRx[2] = 48; bounds->kGRy[2] = 50;
+    bounds->kGRx[3] = 48; bounds->kGRy[3] = 51;
+    bounds->kGRx[4] = 48; bounds->kGRy[4] = 52;
 
+    bounds->kGRx[5] = 48; bounds->kGRy[5] = 53;
+    bounds->kGRx[6] = 49; bounds->kGRy[6] = 53;
+    bounds->kGRx[7] = 50; bounds->kGRy[7] = 53;
+    bounds->kGRx[8] = 51; bounds->kGRy[8] = 53;
+    bounds->kGRx[9] = 52; bounds->kGRy[9] = 53;
+    
+    bounds->kGRx[10] = 49; bounds->kGRy[10] = 48;
+    bounds->kGRx[11] = 50; bounds->kGRy[11] = 48;
+    bounds->kGRx[12] = 51; bounds->kGRy[12] = 48;
+    bounds->kGRx[13] = 52; bounds->kGRy[13] = 48;
+    bounds->kGRx[14] = 53; bounds->kGRy[14] = 48;
+    
+    bounds->kGRx[15] = 53; bounds->kGRy[15] = 49;
+    bounds->kGRx[16] = 53; bounds->kGRy[16] = 50;
+    bounds->kGRx[17] = 53; bounds->kGRy[17] = 51;
+    bounds->kGRx[18] = 53; bounds->kGRy[18] = 52;
+    bounds->kGRx[19] = 53; bounds->kGRy[19] = 53;
+
+    BoundsDefine(bounds, N);
 
     //sdl defining??
 
@@ -494,6 +562,12 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
                 SDL_RenderFillRect(renderer, &rects[i][j]);
             }
         }
+        for (int k = 0; k < bounds->brGR; k++)
+        {
+            SDL_SetRenderDrawColor(renderer, 0, 0, 255, 100);
+            SDL_RenderFillRect(renderer, &rects[bounds->kGRx[k]][bounds->kGRy[k]]);
+        }
+        
 
         SDL_UpdateWindowSurface(window);
         SDL_RenderPresent(renderer);
