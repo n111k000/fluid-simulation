@@ -85,9 +85,40 @@ void FluidSquareAddVelocity(FluidSqare* square, int x, int y, float amountX, flo
     square->Vy[index] += amountY;
 }
 
-static void set_bnd(int b, float* x, int N)
-{
 
+//definiranje vlastitih
+struct Bounds{
+    int* kGRx;
+    int* kGRy;
+    int brGR;
+};
+typedef struct Bounds Bounds;
+
+Bounds* BoundsCreate(int brGR) {
+    Bounds* bounds = (Bounds*)malloc(sizeof(*bounds));
+
+    bounds->brGR = brGR;
+    bounds->kGRx = new int[brGR] {};
+    bounds->kGRy = new int[brGR] {};
+
+    return bounds;
+}
+
+void BoundsFree(Bounds* bounds) {
+    free(bounds->kGRx);
+    free(bounds->kGRy);
+
+    free(bounds);
+}
+
+//postavljanje granica, x-1,y-2,ost-0
+static void set_bnd(int b, float* x, int N, Bounds* bounds)
+{
+    int* kGRx = bounds->kGRx;
+    int* kGRy = bounds->kGRy;
+    int brGR = bounds->brGR;
+
+    //za stranice koje omeduju
     for (int i = 1; i < N - 1; i++) {
         x[IX(i, 0)] = b == 2 ? -x[IX(i, 1)] : x[IX(i, 1)];
         x[IX(i, N - 1)] = b == 2 ? -x[IX(i, N - 2)] : x[IX(i, N - 2)];
@@ -97,6 +128,7 @@ static void set_bnd(int b, float* x, int N)
         x[IX(N - 1, j)] = b == 1 ? -x[IX(N - 2, j)] : x[IX(N - 2, j)];
     }
 
+    //za kuteve koji omeduju
     x[IX(0, 0)] = 0.5f * (x[IX(1, 0)] + x[IX(0, 1)]);
 
     x[IX(0, N - 1)] = 0.5f * (x[IX(1, N - 1)] + x[IX(0, N - 2)]);
@@ -105,10 +137,27 @@ static void set_bnd(int b, float* x, int N)
 
     x[IX(N - 1, N - 1)] = 0.5f * (x[IX(N - 2, N - 1)] + x[IX(N - 1, N - 2)]);
 
+    //za vlastite granice
 
+    for (int k = 0; k < brGR; k++) {
+        if (kGRx[k] != 0) {
+            x[IX(kGRx[k] - 1, kGRy[k])] = b == 2 ? -x[IX(kGRx[k] - 1, kGRy[k])] : x[IX(kGRx[k] - 1, kGRy[k])];
+        }
+        if (kGRx[k] != N-1) {
+            x[IX(kGRx[k] + 1, kGRy[k])] = b == 2 ? -x[IX(kGRx[k] + 1, kGRy[k])] : x[IX(kGRx[k] + 1, kGRy[k])];
+        }
+        if (kGRy[k] != 0) {
+            x[IX(kGRx[k], kGRy[k] - 1)] = b == 2 ? -x[IX(kGRx[k], kGRy[k] - 1)] : x[IX(kGRx[k], kGRy[k] - 1)];
+        }
+        if (kGRy[k] != N-1) {
+            x[IX(kGRx[k], kGRy[k] + 1)] = b == 2 ? -x[IX(kGRx[k], kGRy[k] + 1)] : x[IX(kGRx[k], kGRy[k] + 1)];
+
+        }
+    }
 }
 
-static void lin_solve(int b, float* x, float* x0, float a, float c, int iter, int N)
+//linearno rješavanje
+static void lin_solve(int b, float* x, float* x0, float a, float c, int iter, int N, Bounds* bounds)
 {
     float cRecip = 1.0 / c;
     for (int k = 0; k < iter; k++) {
@@ -125,17 +174,19 @@ static void lin_solve(int b, float* x, float* x0, float a, float c, int iter, in
 
             }
         }
-        set_bnd(b, x, N);
+        set_bnd(b, x, N, bounds);
     }
 }
 
-static void diffuse(int b, float* x, float* x0, float diff, float dt, int iter, int N)
+//difuzija
+static void diffuse(int b, float* x, float* x0, float diff, float dt, int iter, int N, Bounds* bounds)
 {
     float a = dt * diff * (N - 2) * (N - 2);
-    lin_solve(b, x, x0, a, 1 + 6 * a, iter, N);
+    lin_solve(b, x, x0, a, 1 + 6 * a, iter, N, bounds);
 }
 
-static void project(float* velocX, float* velocY, float* p, float* div, int iter, int N)
+//projekcija
+static void project(float* velocX, float* velocY, float* p, float* div, int iter, int N, Bounds* bounds)
 {
 
     for (int j = 1; j < N - 1; j++) {
@@ -149,9 +200,9 @@ static void project(float* velocX, float* velocY, float* p, float* div, int iter
             p[IX(i, j)] = 0;
         }
     }
-    set_bnd(0, div, N);
-    set_bnd(0, p, N);
-    lin_solve(0, p, div, 1, 6, iter, N);
+    set_bnd(0, div, N, bounds);
+    set_bnd(0, p, N, bounds);
+    lin_solve(0, p, div, 1, 6, iter, N, bounds);
 
 
     for (int j = 1; j < N - 1; j++) {
@@ -162,11 +213,12 @@ static void project(float* velocX, float* velocY, float* p, float* div, int iter
                 - p[IX(i, j - 1)]) * N;
         }
     }
-    set_bnd(1, velocX, N);
-    set_bnd(2, velocY, N);
+    set_bnd(1, velocX, N, bounds);
+    set_bnd(2, velocY, N, bounds);
 }
 
-static void advect(int b, float* d, float* d0, float* velocX, float* velocY, float dt, int N)
+//advekcija
+static void advect(int b, float* d, float* d0, float* velocX, float* velocY, float dt, int N, Bounds* bounds)
 {
     float i0, i1, j0, j1;
 
@@ -214,10 +266,11 @@ static void advect(int b, float* d, float* d0, float* velocX, float* velocY, flo
 
         }
     }
-    set_bnd(b, d, N);
+    set_bnd(b, d, N, bounds);
 }
 
-void FluidSquareStep(FluidSqare* square)
+//napravi korak simulcije
+void FluidSquareStep(FluidSqare* square, Bounds* bounds)
 {
     int N = square->size;
     float visc = square->visc;
@@ -230,18 +283,18 @@ void FluidSquareStep(FluidSqare* square)
     float* s = square->s;
     float* density = square->density;
 
-    diffuse(1, Vx0, Vx, visc, dt, 4, N);
-    diffuse(2, Vy0, Vy, visc, dt, 4, N);
+    diffuse(1, Vx0, Vx, visc, dt, 4, N, bounds);
+    diffuse(2, Vy0, Vy, visc, dt, 4, N, bounds);
 
-    project(Vx0, Vy0, Vx, Vy, 4, N);
+    project(Vx0, Vy0, Vx, Vy, 4, N, bounds);
 
-    advect(1, Vx, Vx0, Vx0, Vy0, dt, N);
-    advect(2, Vy, Vy0, Vx0, Vy0, dt, N);
+    advect(1, Vx, Vx0, Vx0, Vy0, dt, N, bounds);
+    advect(2, Vy, Vy0, Vx0, Vy0, dt, N, bounds);
 
-    project(Vx, Vy, Vx0, Vy0, 4, N);
+    project(Vx, Vy, Vx0, Vy0, 4, N, bounds);
 
-    diffuse(0, s, density, diff, dt, 4, N);
-    advect(0, density, s, Vx, Vy, dt, N);
+    diffuse(0, s, density, diff, dt, 4, N, bounds);
+    advect(0, density, s, Vx, Vy, dt, N, bounds);
 }
 
 //pauza
@@ -257,7 +310,7 @@ void Pause() {
     }
 }
 
-//prolazak kroz sve to?ke nastanka plina i brzina
+//prolazak kroz sve tocke nastanka plina i brzina
 void GaVAdding(FluidSqare* square, int* SPx, int* SPy, int* SPam, int* VELx, int* VELy, float* VELxam, float* VELyam, int noSP, int noVEL) {
 
     for (int i = 0; i < noSP; i++) {
@@ -330,7 +383,18 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
         std::cout << "Unesi kolicinu po y za " << i + 1 << ": ";
         std::cin >> VELyam[i];
     }
-    
+
+
+    //vlastite granice
+    Bounds* bounds;
+    bounds = BoundsCreate(2);
+
+
+    bounds->kGRx[0] = 50;
+    bounds->kGRy[0] = 50;
+    bounds->kGRx[1] = 49;
+    bounds->kGRy[1] = 50;
+
 
     //sdl defining??
 
@@ -417,7 +481,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
 
                
         
-        FluidSquareStep(square);
+        FluidSquareStep(square, bounds);
 
         //pretvara iz podataka u sliku
         for (int i = 0; i < 100; i++) {
@@ -444,6 +508,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
     delete[] VELxam;
     delete[] VELyam;
     FluidSquareFree(square);
+    BoundsFree(bounds);
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
     SDL_Quit();
