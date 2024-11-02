@@ -187,16 +187,16 @@ static void set_bnd(int b, float* x, int N, Bounds* bounds)
             bool pr = GR[IX(kGRx[k] + 1, kGRy[k])];
             bool pd = GR[IX(kGRx[k], kGRy[k] + 1)];
 
-            if (pl == 1 && pu == 1 && pr == 0 && pd == 0) {
+            if (pr == 0 && pd == 0) {
                 x[IX(kGRx[k] + 1, kGRy[k] + 1)] = b == 2 ? abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : abs(x[IX(kGRx[k] - 1, kGRy[k])]);
             }
-            else if (pl == 0 && pu == 1 && pr == 1 && pd == 0) {
+            if (pl == 0 && pd == 0) {
                 x[IX(kGRx[k] - 1, kGRy[k] + 1)] = b == 2 ? abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : -abs(x[IX(kGRx[k] - 1, kGRy[k])]);
             }
-            else if (pl == 1 && pu == 0 && pr == 0 && pd == 1) {
+            if (pu == 0 && pr == 0) {
                 x[IX(kGRx[k] + 1, kGRy[k] - 1)] = b == 2 ? -abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : abs(x[IX(kGRx[k] - 1, kGRy[k])]);
             }
-            else if (pl == 0 && pu == 0 && pr == 1 && pd == 1) {
+            if (pl == 0 && pu == 0) {
                 x[IX(kGRx[k] - 1, kGRy[k] - 1)] = b == 2 ? -abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : -abs(x[IX(kGRx[k] - 1, kGRy[k])]);
             }
             
@@ -435,7 +435,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
 
     //vlastite granice
     Bounds* bounds;
-    bounds = BoundsCreate(10, N);
+    bounds = BoundsCreate(15, N);
 
 
     bounds->kGRx[0] = 48; bounds->kGRy[0] = 48;
@@ -443,12 +443,18 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
     bounds->kGRx[2] = 48; bounds->kGRy[2] = 50;
     bounds->kGRx[3] = 48; bounds->kGRy[3] = 51;
     bounds->kGRx[4] = 48; bounds->kGRy[4] = 52;
+    bounds->kGRx[10] = 48; bounds->kGRy[10] = 47;
+    bounds->kGRx[11] = 48; bounds->kGRy[11] = 46;
+    bounds->kGRx[12] = 48; bounds->kGRy[12] = 45;
+    bounds->kGRx[13] = 48; bounds->kGRy[13] = 44;
+    bounds->kGRx[14] = 48; bounds->kGRy[14] = 43;
+    bounds->kGRx[5] = 48; bounds->kGRy[5] = 42;
+    bounds->kGRx[6] = 48; bounds->kGRy[6] = 41;
+    bounds->kGRx[7] = 48; bounds->kGRy[7] = 40;
+    bounds->kGRx[8] = 48; bounds->kGRy[8] = 39;
+    bounds->kGRx[9] = 48; bounds->kGRy[9] = 38;
 
-    bounds->kGRx[5] = 48; bounds->kGRy[5] = 53;
-    bounds->kGRx[6] = 49; bounds->kGRy[6] = 53;
-    bounds->kGRx[7] = 50; bounds->kGRy[7] = 53;
-    bounds->kGRx[8] = 51; bounds->kGRy[8] = 53;
-    bounds->kGRx[9] = 52; bounds->kGRy[9] = 53;
+    
     
     
 
