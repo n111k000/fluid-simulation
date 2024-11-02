@@ -161,7 +161,7 @@ static void set_bnd(int b, float* x, int N, Bounds* bounds)
         bool r = kGRx[k] != N - 1;
         bool l = kGRx[k] != 0;
         
-
+        
         if (l) {
             x[IX(kGRx[k] - 1, kGRy[k])] = b == 1 ? -abs(x[IX(kGRx[k] - 1, kGRy[k])]) : x[IX(kGRx[k] - 1, kGRy[k])];
         }
@@ -435,7 +435,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
 
     //vlastite granice
     Bounds* bounds;
-    bounds = BoundsCreate(20, N);
+    bounds = BoundsCreate(10, N);
 
 
     bounds->kGRx[0] = 48; bounds->kGRy[0] = 48;
@@ -450,17 +450,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
     bounds->kGRx[8] = 51; bounds->kGRy[8] = 53;
     bounds->kGRx[9] = 52; bounds->kGRy[9] = 53;
     
-    bounds->kGRx[10] = 49; bounds->kGRy[10] = 48;
-    bounds->kGRx[11] = 50; bounds->kGRy[11] = 48;
-    bounds->kGRx[12] = 51; bounds->kGRy[12] = 48;
-    bounds->kGRx[13] = 52; bounds->kGRy[13] = 48;
-    bounds->kGRx[14] = 53; bounds->kGRy[14] = 48;
     
-    bounds->kGRx[15] = 53; bounds->kGRy[15] = 49;
-    bounds->kGRx[16] = 53; bounds->kGRy[16] = 50;
-    bounds->kGRx[17] = 53; bounds->kGRy[17] = 51;
-    bounds->kGRx[18] = 53; bounds->kGRy[18] = 52;
-    bounds->kGRx[19] = 53; bounds->kGRy[19] = 53;
 
     BoundsDefine(bounds, N);
 
