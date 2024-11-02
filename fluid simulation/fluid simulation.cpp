@@ -163,16 +163,16 @@ static void set_bnd(int b, float* x, int N, Bounds* bounds)
         
 
         if (l) {
-            x[IX(kGRx[k] - 1, kGRy[k])] = b == 1 ? -x[IX(kGRx[k] - 1, kGRy[k])] : x[IX(kGRx[k] - 1, kGRy[k])];
+            x[IX(kGRx[k] - 1, kGRy[k])] = b == 1 ? -abs(x[IX(kGRx[k] - 1, kGRy[k])]) : x[IX(kGRx[k] - 1, kGRy[k])];
         }
         if (r) {
-            x[IX(kGRx[k] + 1, kGRy[k])] = b == 1 ? -x[IX(kGRx[k] + 1, kGRy[k])] : x[IX(kGRx[k] + 1, kGRy[k])];
+            x[IX(kGRx[k] + 1, kGRy[k])] = b == 1 ? abs(x[IX(kGRx[k] + 1, kGRy[k])]) : x[IX(kGRx[k] + 1, kGRy[k])];
         }
         if (u) {
-            x[IX(kGRx[k], kGRy[k] - 1)] = b == 2 ? -x[IX(kGRx[k], kGRy[k] - 1)] : x[IX(kGRx[k], kGRy[k] - 1)];
+            x[IX(kGRx[k], kGRy[k] - 1)] = b == 2 ? -abs(x[IX(kGRx[k], kGRy[k] - 1)]) : x[IX(kGRx[k], kGRy[k] - 1)];
         }
         if (d) {
-            x[IX(kGRx[k], kGRy[k] + 1)] = b == 2 ? -x[IX(kGRx[k], kGRy[k] + 1)] : x[IX(kGRx[k], kGRy[k] + 1)];
+            x[IX(kGRx[k], kGRy[k] + 1)] = b == 2 ? abs(x[IX(kGRx[k], kGRy[k] + 1)]) : x[IX(kGRx[k], kGRy[k] + 1)];
         }
         //kutevi
         
@@ -182,21 +182,21 @@ static void set_bnd(int b, float* x, int N, Bounds* bounds)
         if(l && r && u && d){
 
             //lijevo gore desno dolje
-            int val1 = GR[IX(kGRx[k] - 1, kGRy[k])];
-            int val2 = GR[IX(kGRx[k], kGRy[k] - 1)];
-            int val3 = GR[IX(kGRx[k] + 1, kGRy[k])];
-            int val4 = GR[IX(kGRx[k], kGRy[k] + 1)];
+            bool pl = GR[IX(kGRx[k] - 1, kGRy[k])];
+            bool pu = GR[IX(kGRx[k], kGRy[k] - 1)];
+            bool pr = GR[IX(kGRx[k] + 1, kGRy[k])];
+            bool pd = GR[IX(kGRx[k], kGRy[k] + 1)];
 
-            if (val1 == 1 && val2 == 1 && val3 == 0 && val4 == 0) {
+            if (pl == 1 && pu == 1 && pr == 0 && pd == 0) {
                 x[IX(kGRx[k] + 1, kGRy[k] + 1)] = b == 2 ? abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : abs(x[IX(kGRx[k] - 1, kGRy[k])]);
             }
-            else if (val1 == 0 && val2 == 1 && val3 == 1 && val4 == 0) {
+            else if (pl == 0 && pu == 1 && pr == 1 && pd == 0) {
                 x[IX(kGRx[k] - 1, kGRy[k] + 1)] = b == 2 ? abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : -abs(x[IX(kGRx[k] - 1, kGRy[k])]);
             }
-            else if (val1 == 1 && val2 == 0 && val3 == 0 && val4 == 1) {
+            else if (pl == 1 && pu == 0 && pr == 0 && pd == 1) {
                 x[IX(kGRx[k] + 1, kGRy[k] - 1)] = b == 2 ? -abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : abs(x[IX(kGRx[k] - 1, kGRy[k])]);
             }
-            else if (val1 == 0 && val2 == 0 && val3 == 1 && val4 == 1) {
+            else if (pl == 0 && pu == 0 && pr == 1 && pd == 1) {
                 x[IX(kGRx[k] - 1, kGRy[k] - 1)] = b == 2 ? -abs(x[IX(kGRx[k] - 1, kGRy[k] - 1)]) : -abs(x[IX(kGRx[k] - 1, kGRy[k])]);
             }
             
@@ -555,7 +555,7 @@ int main(int argc, char* argv[]/*, FluidSqare* square*/)
         for (int i = 0; i < 100; i++) {
             for (int j = 0; j < 100; j++)
             {
-                int dens = square->density[IX(i, j)] * 255/2;
+                int dens = square->density[IX(i, j)] * 255/1.5;
                 dens > 255 ? dens = 255 : dens;
                 rects[i][j] = newSDL_Rect(i * 10, j * 10, 10, 10);
                 SDL_SetRenderDrawColor(renderer, dens, dens, 0, 255);
